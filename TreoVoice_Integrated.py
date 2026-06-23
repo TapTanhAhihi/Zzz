@@ -69,9 +69,9 @@ class DiscordVoiceBot:
             if s:
                 self.sequence = s
             
-            if op == 10:  # Hello
+            if op == 10:
                 self.heartbeat_interval = data['d']['heartbeat_interval'] / 1000
-                print(f"{Fore.GREEN}[✅] Gateway Connected - Heartbeat: {self.heartbeat_interval}s{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}✓ Kết nối thành công{Style.RESET_ALL}")
                 
                 self.heartbeat_thread = threading.Thread(target=self.send_heartbeat, daemon=True)
                 self.heartbeat_thread.start()
@@ -82,7 +82,6 @@ class DiscordVoiceBot:
                 self.user_id = data['d']['user']['id']
                 self.session_id = data['d']['session_id']
                 self.identified = True
-                print(f"{Fore.GREEN}[✅] READY - User: {self.user_id}{Style.RESET_ALL}")
                 
                 time.sleep(0.2)
                 self.voice_state_update(self.guild_id, self.channel_id)
@@ -90,7 +89,7 @@ class DiscordVoiceBot:
             elif t == "VOICE_STATE_UPDATE":
                 d = data.get('d', {})
                 if d.get('guild_id') == self.guild_id and d.get('channel_id') == self.channel_id:
-                    print(f"{Fore.CYAN}[🎤] Voice State Updated{Style.RESET_ALL}")
+                    pass
                 
             elif t == "VOICE_SERVER_UPDATE":
                 self.voice_endpoint = data['d'].get('endpoint')
@@ -98,30 +97,26 @@ class DiscordVoiceBot:
                 self.server_id = data['d'].get('guild_id')
                 
                 if self.voice_endpoint:
-                    print(f"{Fore.CYAN}[🔗] Received Voice Endpoint{Style.RESET_ALL}")
                     time.sleep(0.5)
                     self.voice_retry_count = 0
                     self.connect_voice_gateway()
                 
             elif op == 9:
-                print(f"{Fore.RED}[❌] Invalid Session - Token banned!{Style.RESET_ALL}")
+                print(f"{Fore.RED}✗ Token bị ban{Style.RESET_ALL}")
                 self.running = False
                 
         except Exception as e:
-            print(f"{Fore.RED}[❌] Gateway Error: {e}{Style.RESET_ALL}")
+            pass
 
     def on_error(self, ws, error):
-        """Xử lý error"""
-        print(f"{Fore.RED}[❌] WebSocket error: {error}{Style.RESET_ALL}")
+        pass
 
     def on_close(self, ws, close_status_code, close_msg):
-        """Khi kết nối đóng"""
-        print(f"{Fore.YELLOW}[⚠️] Gateway Disconnected - Code: {close_status_code}{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}⚠ Kết nối đóng{Style.RESET_ALL}")
         self.running = False
 
     def on_open(self, ws):
-        """Khi kết nối mở"""
-        print(f"{Fore.GREEN}[✅] WebSocket Connected{Style.RESET_ALL}")
+        pass
 
     def send_heartbeat(self):
         """Gửi heartbeat tới Gateway"""
@@ -131,7 +126,6 @@ class DiscordVoiceBot:
                 if self.ws and self.ws.sock:
                     self.ws.send(json.dumps({"op": 1, "d": self.sequence}))
             except Exception as e:
-                print(f"{Fore.RED}[❌] Heartbeat error: {e}{Style.RESET_ALL}")
                 break
 
     def send_voice_heartbeat(self):
@@ -145,7 +139,6 @@ class DiscordVoiceBot:
                         "d": int(time.time() * 1000)
                     }))
             except Exception as e:
-                print(f"{Fore.RED}[❌] Voice Heartbeat error: {e}{Style.RESET_ALL}")
                 self.voice_connected = False
                 break
 
@@ -158,7 +151,6 @@ class DiscordVoiceBot:
                     packet = struct.pack('>I', 0)
                     self.udp_socket.sendto(packet, (self.voice_ip, self.voice_port))
         except Exception as e:
-            print(f"{Fore.RED}[❌] UDP Keepalive error: {e}{Style.RESET_ALL}")
             self.voice_connected = False
 
     def identify(self):
@@ -172,7 +164,7 @@ class DiscordVoiceBot:
                     "os": "Linux",
                     "browser": "Discord Client",
                     "device": "Discord Client",
-                    "system_locale": "en-US",
+                    "system_locale": "vi-VN",
                     "browser_user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
                     "browser_version": "",
                     "os_version": "",
@@ -184,7 +176,6 @@ class DiscordVoiceBot:
             }
         }
         self.ws.send(json.dumps(identify_payload))
-        print(f"{Fore.CYAN}[📤] Sending IDENTIFY...{Style.RESET_ALL}")
 
     def voice_state_update(self, guild_id: str, channel_id: str):
         """Gửi VOICE_STATE_UPDATE"""
@@ -203,7 +194,6 @@ class DiscordVoiceBot:
             }
         }
         self.ws.send(json.dumps(voice_state_payload))
-        print(f"{Fore.CYAN}[📤] Joining Voice Channel...{Style.RESET_ALL}")
 
     def fake_stream_create(self):
         """Tạo fake live stream - op=18"""
@@ -220,21 +210,21 @@ class DiscordVoiceBot:
             }
         }
         self.ws.send(json.dumps(fake_stream_payload))
-        print(f"{Fore.MAGENTA}[🎥] Fake Live Stream Started{Style.RESET_ALL}")
+        print(f"{Fore.MAGENTA}► Live stream bắt đầu{Style.RESET_ALL}")
 
     def toggle_mute(self, mute: bool):
         """Bật/tắt mic"""
         self.self_mute = mute
         self.voice_state_update(self.guild_id, self.channel_id)
-        status = "Muted" if mute else "Unmuted"
-        print(f"{Fore.LIGHTBLUE_EX}[🎤] Mic {status}{Style.RESET_ALL}")
+        status = "Tắt" if mute else "Bật"
+        print(f"{Fore.LIGHTYELLOW_EX}► Mic {status}{Style.RESET_ALL}")
 
     def toggle_deaf(self, deaf: bool):
         """Bật/tắt loa"""
         self.self_deaf = deaf
         self.voice_state_update(self.guild_id, self.channel_id)
-        status = "Deafened" if deaf else "Undeafened"
-        print(f"{Fore.LIGHTGREEN_EX}[🔊] Speaker {status}{Style.RESET_ALL}")
+        status = "Tắt" if deaf else "Bật"
+        print(f"{Fore.LIGHTGREEN_EX}► Loa {status}{Style.RESET_ALL}")
 
     def voice_identify(self):
         """Gửi IDENTIFY tới Voice Gateway - Voice v9"""
@@ -248,7 +238,6 @@ class DiscordVoiceBot:
             }
         }
         self.voice_ws.send(json.dumps(identify_payload))
-        print(f"{Fore.CYAN}[📤] Voice IDENTIFY sent...{Style.RESET_ALL}")
 
     def voice_on_message(self, ws, message):
         """Xử lý message từ Voice Gateway"""
@@ -256,21 +245,18 @@ class DiscordVoiceBot:
             data = json.loads(message)
             op = data.get('op')
             
-            if op == 8:  # Hello
+            if op == 8:
                 self.voice_heartbeat_interval = data['d']['heartbeat_interval']
-                print(f"{Fore.GREEN}[✅] Voice Gateway Ready{Style.RESET_ALL}")
                 
                 self.voice_identify()
                 
                 self.voice_heartbeat_thread = threading.Thread(target=self.send_voice_heartbeat, daemon=True)
                 self.voice_heartbeat_thread.start()
                 
-            elif op == 2:  # Ready
+            elif op == 2:
                 self.voice_ssrc = data['d'].get('ssrc')
                 self.voice_ip = data['d'].get('ip')
                 self.voice_port = data['d'].get('port')
-                
-                print(f"{Fore.GREEN}[✅] Voice Ready - SSRC: {self.voice_ssrc}{Style.RESET_ALL}")
                 
                 self.setup_udp_socket()
                 
@@ -279,27 +265,25 @@ class DiscordVoiceBot:
                 
                 self.voice_connected = True
                 
-                # Fake stream sau khi voice ready
                 time.sleep(0.2)
                 self.fake_stream_create()
                     
-            elif op == 4:  # Session Description
+            elif op == 4:
                 mode = data['d'].get('mode')
                 secret_key = data['d'].get('secret_key')
                 
                 if secret_key:
                     self.secret_key = secret_key
-                    print(f"{Fore.GREEN}[✅] Session Description Received - Mode: {mode}{Style.RESET_ALL}")
-                    print(f"{Fore.LIGHTMAGENTA_EX}[🎉] ✨ TREO VOICE THÀNH CÔNG ✨{Style.RESET_ALL}")
+                    print(f"{Fore.LIGHTMAGENTA_EX}✓ Treo voice thành công!{Style.RESET_ALL}")
                     self.voice_connected = True
                 
-            elif op == 5:  # Speaking
+            elif op == 5:
                 pass
                 
         except json.JSONDecodeError:
             pass
         except Exception as e:
-            print(f"{Fore.RED}[❌] Voice message error: {e}{Style.RESET_ALL}")
+            pass
 
     def setup_udp_socket(self):
         """Tạo UDP socket cho voice"""
@@ -307,27 +291,26 @@ class DiscordVoiceBot:
             self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.udp_socket.bind(("0.0.0.0", 0))
         except Exception as e:
-            print(f"{Fore.RED}[❌] UDP socket error: {e}{Style.RESET_ALL}")
+            pass
 
     def voice_on_error(self, ws, error):
         """Xử lý error voice"""
         error_str = str(error)
         if "Session is no longer valid" in error_str or "4014" in error_str:
-            print(f"{Fore.YELLOW}[⚠️] Session expired - Auto reconnecting in {self.reconnect_delay}s...{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⚠ Phiên hết hạn - Tái kết nối trong {self.reconnect_delay}s...{Style.RESET_ALL}")
             self.voice_connected = False
             if self.voice_retry_count < self.max_voice_retries:
                 self.voice_retry_count += 1
                 time.sleep(self.reconnect_delay)
                 self.connect_voice_gateway()
         else:
-            print(f"{Fore.LIGHTYELLOW_EX}[⚠️] Voice error: {error}{Style.RESET_ALL}")
             self.voice_connected = False
 
     def voice_on_close(self, ws, close_status_code, close_msg):
         """Khi voice kết nối đóng"""
         self.voice_connected = False
         if close_status_code != 1000 and self.running:
-            print(f"{Fore.YELLOW}[⚠️] Voice disconnected (Code: {close_status_code}) - Auto reconnecting in {self.reconnect_delay}s...{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}⚠ Kết nối voice ngừng - Tái kết nối trong {self.reconnect_delay}s...{Style.RESET_ALL}")
             if self.voice_retry_count < self.max_voice_retries:
                 self.voice_retry_count += 1
                 time.sleep(self.reconnect_delay)
@@ -335,12 +318,11 @@ class DiscordVoiceBot:
 
     def voice_on_open(self, ws):
         """Khi voice kết nối mở"""
-        print(f"{Fore.GREEN}[✅] Voice WebSocket Connected{Style.RESET_ALL}")
+        pass
 
     def connect_voice_gateway(self):
         """Kết nối tới Voice Gateway - Voice v9"""
         if not self.voice_endpoint or not self.voice_token:
-            print(f"{Fore.RED}[❌] Missing endpoint or token{Style.RESET_ALL}")
             return
         
         try:
@@ -362,7 +344,7 @@ class DiscordVoiceBot:
             voice_thread.start()
             
         except Exception as e:
-            print(f"{Fore.RED}[❌] Voice connection error: {e}{Style.RESET_ALL}")
+            pass
 
     def connect(self, guild_id: str, channel_id: str):
         """Kết nối tới Discord Gateway - API v10"""
@@ -371,7 +353,6 @@ class DiscordVoiceBot:
         
         try:
             ws_url = "wss://gateway.discord.gg/?v=10&encoding=json"
-            print(f"{Fore.CYAN}[🔗] Connecting to Discord Gateway...{Style.RESET_ALL}\n")
             
             self.ws = websocket.WebSocketApp(
                 ws_url,
@@ -384,7 +365,7 @@ class DiscordVoiceBot:
             self.ws.run_forever()
             
         except Exception as e:
-            print(f"{Fore.RED}[❌] Connection error: {e}{Style.RESET_ALL}")
+            pass
         finally:
             self.running = False
             if self.ws:
@@ -409,14 +390,14 @@ def load_token_from_file():
         with open(TOKEN_FILE_1, 'r') as f:
             token = f.read().strip()
             if token:
-                print(f"{Fore.LIGHTGREEN_EX}[✅] Token loaded from {TOKEN_FILE_1}{Style.RESET_ALL}")
+                print(f"{Fore.LIGHTGREEN_EX}✓ Token tải từ {TOKEN_FILE_1}{Style.RESET_ALL}")
                 return token
     
     if os.path.exists(TOKEN_FILE_2):
         with open(TOKEN_FILE_2, 'r') as f:
             token = f.read().strip()
             if token:
-                print(f"{Fore.LIGHTGREEN_EX}[✅] Token loaded from {TOKEN_FILE_2}{Style.RESET_ALL}")
+                print(f"{Fore.LIGHTGREEN_EX}✓ Token tải từ {TOKEN_FILE_2}{Style.RESET_ALL}")
                 return token
     
     return None
@@ -432,109 +413,143 @@ def load_config():
             pass
     return None
 
-def save_config(guild_id: str, channel_id: str):
+def save_config(guild_id: str, channel_id: str, self_mute: bool, self_deaf: bool):
     """Lưu cấu hình vào file"""
     config = {
         "guild_id": guild_id,
-        "channel_id": channel_id
+        "channel_id": channel_id,
+        "self_mute": self_mute,
+        "self_deaf": self_deaf
     }
     with open(CONFIG_FILE, 'w') as f:
-        json.dump(config, f, indent=2)
-    print(f"{Fore.LIGHTGREEN_EX}[✅] Config saved to {CONFIG_FILE}{Style.RESET_ALL}")
+        json.dump(config, f, indent=2, ensure_ascii=False)
+    print(f"{Fore.LIGHTGREEN_EX}✓ Cấu hình đã lưu{Style.RESET_ALL}")
 
-def display_config(guild_id: str, channel_id: str):
+def display_config(guild_id: str, channel_id: str, self_mute: bool, self_deaf: bool):
     """Hiển thị cấu hình đã lưu"""
     print(f"\n{Fore.LIGHTCYAN_EX}{'='*50}")
-    print(f"📋 CURRENT CONFIGURATION")
+    print(f"  CẤU HÌNH HIỆN TẠI")
     print(f"{'='*50}")
-    print(f"{Fore.LIGHTYELLOW_EX}Guild ID    : {Fore.LIGHTGREEN_EX}{guild_id}{Style.RESET_ALL}")
-    print(f"{Fore.LIGHTYELLOW_EX}Channel ID  : {Fore.LIGHTGREEN_EX}{channel_id}{Style.RESET_ALL}")
+    print(f"{Fore.LIGHTYELLOW_EX}Guild ID      : {Fore.LIGHTGREEN_EX}{guild_id}")
+    print(f"{Fore.LIGHTYELLOW_EX}Channel ID    : {Fore.LIGHTGREEN_EX}{channel_id}")
+    print(f"{Fore.LIGHTYELLOW_EX}Mic           : {Fore.LIGHTGREEN_EX}{'Tắt' if self_mute else 'Bật'}")
+    print(f"{Fore.LIGHTYELLOW_EX}Loa           : {Fore.LIGHTGREEN_EX}{'Tắt' if self_deaf else 'Bật'}{Style.RESET_ALL}")
     print(f"{Fore.LIGHTCYAN_EX}{'='*50}{Style.RESET_ALL}\n")
 
 def main():
     print(f"{Fore.LIGHTCYAN_EX}╔════════════════════════════════════════════╗")
-    print(f"║  {Fore.LIGHTMAGENTA_EX}Discord Voice Bot v3 (Full Features){Fore.LIGHTCYAN_EX}   ║")
-    print(f"║  {Fore.LIGHTGREEN_EX}Gateway v10 + Voice v9 + Fake Stream{Fore.LIGHTCYAN_EX}      ║")
+    print(f"║  {Fore.LIGHTMAGENTA_EX}Discord Voice Bot v4 (Tối ưu){Fore.LIGHTCYAN_EX}          ║")
+    print(f"║  {Fore.LIGHTGREEN_EX}Gateway v10 + Voice v9 + Live Streaming{Fore.LIGHTCYAN_EX}  ║")
     print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}\n")
     
     # Load token từ file
     token = load_token_from_file()
     
     if not token:
-        print(f"{Fore.LIGHTYELLOW_EX}[⚠️] Token file not found or empty{Style.RESET_ALL}")
-        token = input(f"{Fore.CYAN}Enter Discord Token: {Style.RESET_ALL}").strip()
+        print(f"{Fore.LIGHTYELLOW_EX}⚠ Không tìm thấy file token{Style.RESET_ALL}")
+        token = input(f"{Fore.CYAN}Nhập Discord Token: {Style.RESET_ALL}").strip()
         if not token:
-            print(f"{Fore.RED}❌ Token cannot be empty{Style.RESET_ALL}")
+            print(f"{Fore.RED}✗ Token không được để trống{Style.RESET_ALL}")
             return
 
     # Load config
     config = load_config()
     guild_id = None
     channel_id = None
+    self_mute = False
+    self_deaf = False
     
     if config:
-        display_config(config.get('guild_id'), config.get('channel_id'))
-        change = input(f"{Fore.CYAN}Do you want to change settings? (y/n): {Style.RESET_ALL}").strip().lower()
+        guild_id = config.get('guild_id')
+        channel_id = config.get('channel_id')
+        self_mute = config.get('self_mute', False)
+        self_deaf = config.get('self_deaf', False)
         
-        if change == 'y':
+        display_config(guild_id, channel_id, self_mute, self_deaf)
+        change = input(f"{Fore.CYAN}Thay đổi cấu hình? (c/n): {Style.RESET_ALL}").strip().lower()
+        
+        if change == 'c':
             guild_id = input(f"{Fore.CYAN}Guild ID: {Style.RESET_ALL}").strip()
             channel_id = input(f"{Fore.CYAN}Channel ID: {Style.RESET_ALL}").strip()
-        else:
-            guild_id = config.get('guild_id')
-            channel_id = config.get('channel_id')
+            self_mute = False
+            self_deaf = False
     else:
-        print(f"{Fore.LIGHTYELLOW_EX}[ℹ️] No previous configuration found{Style.RESET_ALL}")
+        print(f"{Fore.LIGHTYELLOW_EX}ℹ Không có cấu hình trước đó{Style.RESET_ALL}")
         guild_id = input(f"{Fore.CYAN}Guild ID: {Style.RESET_ALL}").strip()
         channel_id = input(f"{Fore.CYAN}Channel ID: {Style.RESET_ALL}").strip()
 
     if not guild_id or not channel_id:
-        print(f"{Fore.RED}❌ Guild ID or Channel ID cannot be empty{Style.RESET_ALL}")
+        print(f"{Fore.RED}✗ Guild ID hoặc Channel ID không được để trống{Style.RESET_ALL}")
         return
 
     # Save config
-    save_config(guild_id, channel_id)
+    save_config(guild_id, channel_id, self_mute, self_deaf)
 
-    print(f"\n{Fore.LIGHTGREEN_EX}Connecting...{Style.RESET_ALL}\n")
+    print(f"\n{Fore.LIGHTGREEN_EX}Đang kết nối...{Style.RESET_ALL}\n")
 
     bot = DiscordVoiceBot(token)
+    bot.self_mute = self_mute
+    bot.self_deaf = self_deaf
 
     # Thread để xử lý bot
     bot_thread = threading.Thread(target=bot.connect, args=(guild_id, channel_id), daemon=True)
     bot_thread.start()
 
+    time.sleep(2)
+
     # Menu điều khiển
     print(f"\n{Fore.LIGHTCYAN_EX}╔════════════════════════════════════════════╗")
-    print(f"║  {Fore.LIGHTYELLOW_EX}VOICE CONTROL MENU{Fore.LIGHTCYAN_EX}                      ║")
-    print(f"║  {Fore.LIGHTGREEN_EX}[1]{Fore.LIGHTCYAN_EX} Mute Mic      {Fore.LIGHTGREEN_EX}[2]{Fore.LIGHTCYAN_EX} Unmute Mic         ║")
-    print(f"║  {Fore.LIGHTGREEN_EX}[3]{Fore.LIGHTCYAN_EX} Deafen        {Fore.LIGHTGREEN_EX}[4]{Fore.LIGHTCYAN_EX} Undeafen           ║")
-    print(f"║  {Fore.LIGHTGREEN_EX}[5]{Fore.LIGHTCYAN_EX} Fake Stream   {Fore.LIGHTGREEN_EX}[0]{Fore.LIGHTCYAN_EX} Exit               ║")
+    print(f"║  {Fore.LIGHTYELLOW_EX}MENU ĐIỀU KHIỂN{Fore.LIGHTCYAN_EX}                        ║")
+    print(f"║  {Fore.LIGHTGREEN_EX}[1]{Fore.LIGHTCYAN_EX} Tắt Mic    {Fore.LIGHTGREEN_EX}[2]{Fore.LIGHTCYAN_EX} Bật Mic        ║")
+    print(f"║  {Fore.LIGHTGREEN_EX}[3]{Fore.LIGHTCYAN_EX} Tắt Loa    {Fore.LIGHTGREEN_EX}[4]{Fore.LIGHTCYAN_EX} Bật Loa        ║")
+    print(f"║  {Fore.LIGHTGREEN_EX}[5]{Fore.LIGHTCYAN_EX} Bắt Live   {Fore.LIGHTGREEN_EX}[0]{Fore.LIGHTCYAN_EX} Thoát          ║")
+    print(f"║  {Fore.LIGHTGREEN_EX}[6]{Fore.LIGHTCYAN_EX} Tắt Loa + Mic + Live                    ║")
+    print(f"║  {Fore.LIGHTGREEN_EX}[7]{Fore.LIGHTCYAN_EX} Bật Mic + Loa + Live                    ║")
     print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}\n")
 
     try:
         while bot.running:
             try:
-                cmd = input(f"{Fore.LIGHTBLUE_EX}Command > {Style.RESET_ALL}").strip()
+                cmd = input(f"{Fore.LIGHTBLUE_EX}Lệnh > {Style.RESET_ALL}").strip()
                 
                 if cmd == "1":
                     bot.toggle_mute(True)
+                    save_config(guild_id, channel_id, True, bot.self_deaf)
                 elif cmd == "2":
                     bot.toggle_mute(False)
+                    save_config(guild_id, channel_id, False, bot.self_deaf)
                 elif cmd == "3":
                     bot.toggle_deaf(True)
+                    save_config(guild_id, channel_id, bot.self_mute, True)
                 elif cmd == "4":
                     bot.toggle_deaf(False)
+                    save_config(guild_id, channel_id, bot.self_mute, False)
                 elif cmd == "5":
                     bot.fake_stream_create()
+                elif cmd == "6":
+                    # Tắt Loa + Mic + Live
+                    bot.toggle_mute(True)
+                    bot.toggle_deaf(True)
+                    bot.fake_stream_create()
+                    print(f"{Fore.LIGHTCYAN_EX}► Tắt Loa + Mic + Bắt Live{Style.RESET_ALL}")
+                    save_config(guild_id, channel_id, True, True)
+                elif cmd == "7":
+                    # Bật Mic + Loa + Live
+                    bot.toggle_mute(False)
+                    bot.toggle_deaf(False)
+                    bot.fake_stream_create()
+                    print(f"{Fore.LIGHTGREEN_EX}► Bật Mic + Loa + Bắt Live{Style.RESET_ALL}")
+                    save_config(guild_id, channel_id, False, False)
                 elif cmd == "0":
-                    print(f"{Fore.YELLOW}[⚠️] Exiting...{Style.RESET_ALL}")
+                    print(f"{Fore.YELLOW}⚠ Đang thoát...{Style.RESET_ALL}")
                     bot.running = False
                     break
                 else:
-                    print(f"{Fore.RED}❌ Invalid command{Style.RESET_ALL}")
+                    print(f"{Fore.RED}✗ Lệnh không hợp lệ{Style.RESET_ALL}")
             except EOFError:
                 break
     except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}⚠️ Program closed.{Style.RESET_ALL}")
+        print(f"\n{Fore.YELLOW}⚠ Chương trình đã đóng.{Style.RESET_ALL}")
         bot.running = False
 
 if __name__ == "__main__":
