@@ -9,15 +9,6 @@ import sys
 
 init(autoreset=True)
 
-KEY = "dadi"
-
-nhap_key = input("Nhập key để sử dụng tool: ")
-if nhap_key != KEY:
-    print("❌ Key không đúng! Thoát...")
-    sys.exit()
-else:
-    print("✅ Key chính xác! Tool đang khởi động...")
-
 class DiscordVoiceBot:
     def __init__(self, token: str):
         self.token = token
@@ -50,6 +41,12 @@ class DiscordVoiceBot:
         # Parameters
         self.guild_id = None
         self.channel_id = None
+        
+        # Voice state
+        self.self_mute = False
+        self.self_deaf = False
+        self.self_video = False
+        self.self_stream = False
         
         # Voice retry
         self.voice_retry_count = 0
@@ -101,7 +98,7 @@ class DiscordVoiceBot:
                     self.connect_voice_gateway()
                 
             elif op == 9:
-                print(f"{Fore.RED}[❌] Invalid Session - Token bị ban!")
+                print(f"{Fore.RED}[❌] Invalid Session - Token banned!")
                 self.running = False
                 
         except Exception as e:
@@ -193,12 +190,45 @@ class DiscordVoiceBot:
             "d": {
                 "guild_id": guild_id,
                 "channel_id": channel_id,
-                "self_mute": False,
-                "self_deaf": False
+                "self_mute": self.self_mute,
+                "self_deaf": self.self_deaf,
+                "self_video": self.self_video,
+                "self_stream": self.self_stream
             }
         }
         self.ws.send(json.dumps(voice_state_payload))
         print(f"{Fore.CYAN}[📤] Joining Voice Channel...")
+
+    def fake_stream_create(self):
+        """Tạo fake live stream - op=18"""
+        if not self.identified:
+            return
+            
+        fake_stream_payload = {
+            "op": 18,
+            "d": {
+                "type": "guild",
+                "guild_id": self.guild_id,
+                "channel_id": self.channel_id,
+                "preferred_region": None
+            }
+        }
+        self.ws.send(json.dumps(fake_stream_payload))
+        print(f"{Fore.MAGENTA}[🎥] Fake Live Stream Started")
+
+    def toggle_mute(self, mute: bool):
+        """Bật/tắt mic"""
+        self.self_mute = mute
+        self.voice_state_update(self.guild_id, self.channel_id)
+        status = "Muted" if mute else "Unmuted"
+        print(f"{Fore.YELLOW}[🎤] Mic {status}")
+
+    def toggle_deaf(self, deaf: bool):
+        """Bật/tắt loa"""
+        self.self_deaf = deaf
+        self.voice_state_update(self.guild_id, self.channel_id)
+        status = "Deafened" if deaf else "Undeafened"
+        print(f"{Fore.YELLOW}[🔊] Speaker {status}")
 
     def voice_identify(self):
         """Gửi IDENTIFY tới Voice Gateway - Voice v9"""
@@ -242,6 +272,10 @@ class DiscordVoiceBot:
                 self.udp_thread.start()
                 
                 self.voice_connected = True
+                
+                # Fake stream sau khi voice ready
+                time.sleep(0.2)
+                self.fake_stream_create()
                     
             elif op == 4:  # Session Description
                 mode = data['d'].get('mode')
@@ -364,8 +398,8 @@ class DiscordVoiceBot:
 
 def main():
     print(f"{Fore.CYAN}╔════════════════════════════════════════════╗")
-    print(f"{Fore.CYAN}║    Discord Voice Bot v2 (Optimized)        ║")
-    print(f"{Fore.CYAN}║    Gateway v10 + Voice v9 + UDP            ║")
+    print(f"{Fore.CYAN}║    Discord Voice Bot v2 (Full Features)    ║")
+    print(f"{Fore.CYAN}║  Gateway v10 + Voice v9 + Fake Stream      ║")
     print(f"{Fore.CYAN}╚════════════════════════════════════════════╝\n")
     
     token = input(f"{Fore.CYAN}Discord Token: ").strip()
@@ -384,8 +418,41 @@ def main():
 
     bot = DiscordVoiceBot(token)
 
+    # Thread để xử lý bot
+    bot_thread = threading.Thread(target=bot.connect, args=(guild_id, channel_id), daemon=True)
+    bot_thread.start()
+
+    # Menu điều khiển
+    print(f"\n{Fore.YELLOW}╔════════════════════════════════════════════╗")
+    print(f"{Fore.YELLOW}║         VOICE CONTROL MENU                 ║")
+    print(f"{Fore.YELLOW}║  [1] Mute Mic      [2] Unmute Mic         ║")
+    print(f"{Fore.YELLOW}║  [3] Deafen        [4] Undeafen           ║")
+    print(f"{Fore.YELLOW}║  [5] Fake Stream   [0] Exit               ║")
+    print(f"{Fore.YELLOW}╚════════════════════════════════════════════╝\n")
+
     try:
-        bot.connect(guild_id, channel_id)
+        while bot.running:
+            try:
+                cmd = input(f"{Fore.CYAN}Command > ").strip()
+                
+                if cmd == "1":
+                    bot.toggle_mute(True)
+                elif cmd == "2":
+                    bot.toggle_mute(False)
+                elif cmd == "3":
+                    bot.toggle_deaf(True)
+                elif cmd == "4":
+                    bot.toggle_deaf(False)
+                elif cmd == "5":
+                    bot.fake_stream_create()
+                elif cmd == "0":
+                    print(f"{Fore.YELLOW}[⚠️] Exiting...")
+                    bot.running = False
+                    break
+                else:
+                    print(f"{Fore.RED}❌ Invalid command")
+            except EOFError:
+                break
     except KeyboardInterrupt:
         print(f"\n{Fore.YELLOW}⚠️ Program closed.")
         bot.running = False
