@@ -71,7 +71,6 @@ class DiscordVoiceBot:
             
             if op == 10:
                 self.heartbeat_interval = data['d']['heartbeat_interval'] / 1000
-                print(f"{Fore.GREEN}✓ Kết nối thành công{Style.RESET_ALL}")
                 
                 self.heartbeat_thread = threading.Thread(target=self.send_heartbeat, daemon=True)
                 self.heartbeat_thread.start()
@@ -82,6 +81,7 @@ class DiscordVoiceBot:
                 self.user_id = data['d']['user']['id']
                 self.session_id = data['d']['session_id']
                 self.identified = True
+                print(f"{Fore.LIGHTGREEN_EX}✓ Kết nối thành công{Style.RESET_ALL}")
                 
                 time.sleep(0.2)
                 self.voice_state_update(self.guild_id, self.channel_id)
@@ -112,8 +112,7 @@ class DiscordVoiceBot:
         pass
 
     def on_close(self, ws, close_status_code, close_msg):
-        print(f"{Fore.YELLOW}⚠ Kết nối đóng{Style.RESET_ALL}")
-        self.running = False
+        pass
 
     def on_open(self, ws):
         pass
@@ -297,20 +296,16 @@ class DiscordVoiceBot:
         """Xử lý error voice"""
         error_str = str(error)
         if "Session is no longer valid" in error_str or "4014" in error_str:
-            print(f"{Fore.YELLOW}⚠ Phiên hết hạn - Tái kết nối trong {self.reconnect_delay}s...{Style.RESET_ALL}")
             self.voice_connected = False
             if self.voice_retry_count < self.max_voice_retries:
                 self.voice_retry_count += 1
                 time.sleep(self.reconnect_delay)
                 self.connect_voice_gateway()
-        else:
-            self.voice_connected = False
 
     def voice_on_close(self, ws, close_status_code, close_msg):
         """Khi voice kết nối đóng"""
         self.voice_connected = False
         if close_status_code != 1000 and self.running:
-            print(f"{Fore.YELLOW}⚠ Kết nối voice ngừng - Tái kết nối trong {self.reconnect_delay}s...{Style.RESET_ALL}")
             if self.voice_retry_count < self.max_voice_retries:
                 self.voice_retry_count += 1
                 time.sleep(self.reconnect_delay)
@@ -423,7 +418,6 @@ def save_config(guild_id: str, channel_id: str, self_mute: bool, self_deaf: bool
     }
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
-    print(f"{Fore.LIGHTGREEN_EX}✓ Cấu hình đã lưu{Style.RESET_ALL}")
 
 def display_config(guild_id: str, channel_id: str, self_mute: bool, self_deaf: bool):
     """Hiển thị cấu hình đã lưu"""
@@ -438,7 +432,7 @@ def display_config(guild_id: str, channel_id: str, self_mute: bool, self_deaf: b
 
 def main():
     print(f"{Fore.LIGHTCYAN_EX}╔════════════════════════════════════════════╗")
-    print(f"║  {Fore.LIGHTMAGENTA_EX}Discord Voice Bot v4 (Tối ưu){Fore.LIGHTCYAN_EX}          ║")
+    print(f"║  {Fore.LIGHTMAGENTA_EX}Discord Voice Bot v5 (Tối ưu){Fore.LIGHTCYAN_EX}          ║")
     print(f"║  {Fore.LIGHTGREEN_EX}Gateway v10 + Voice v9 + Live Streaming{Fore.LIGHTCYAN_EX}  ║")
     print(f"╚════════════════════════════════════════════╝{Style.RESET_ALL}\n")
     
@@ -527,16 +521,20 @@ def main():
                 elif cmd == "5":
                     bot.fake_stream_create()
                 elif cmd == "6":
-                    # Tắt Loa + Mic + Live
+                    # Tắt Loa + Mic + Bắt Live
                     bot.toggle_mute(True)
+                    time.sleep(0.1)
                     bot.toggle_deaf(True)
+                    time.sleep(0.1)
                     bot.fake_stream_create()
                     print(f"{Fore.LIGHTCYAN_EX}► Tắt Loa + Mic + Bắt Live{Style.RESET_ALL}")
                     save_config(guild_id, channel_id, True, True)
                 elif cmd == "7":
-                    # Bật Mic + Loa + Live
+                    # Bật Mic + Loa + Bắt Live
                     bot.toggle_mute(False)
+                    time.sleep(0.1)
                     bot.toggle_deaf(False)
+                    time.sleep(0.1)
                     bot.fake_stream_create()
                     print(f"{Fore.LIGHTGREEN_EX}► Bật Mic + Loa + Bắt Live{Style.RESET_ALL}")
                     save_config(guild_id, channel_id, False, False)
